@@ -1,11 +1,22 @@
 const QRCode = require("qrcode");
 const Table = require("../models/Table");
 
+/** Helper to dynamically detect the calling client URL (Vercel, localhost, or env) */
+const getClientUrl = (req) => {
+  const headerUrl = req.headers["x-client-url"];
+  const origin = req.headers.origin;
+  let refererOrigin = null;
+  if (req.headers.referer) {
+    try {
+      refererOrigin = new URL(req.headers.referer).origin;
+    } catch (_) {}
+  }
+  const rawUrl = headerUrl || req.body?.clientUrl || req.query?.clientUrl || origin || refererOrigin || process.env.CLIENT_URL || "http://localhost:5173";
+  return rawUrl.replace(/\/+$/, "");
+};
+
 /**
- * Owner creates a table. The Table model auto-generates a random
- * qrToken on creation (see models/Table.js). We then build the
- * actual ordering URL and turn it into a scannable QR code image
- * (base64 data URL) that the owner can download and print.
+ * Owner creates a table. Generates ordering URL dynamically based on frontend origin.
  */
 const createTable = async (req, res) => {
   try {
@@ -16,8 +27,13 @@ const createTable = async (req, res) => {
       tableNumber
     });
 
-    const orderingUrl = `${process.env.CLIENT_URL}/order?table=${table.qrToken}`;
-    const qrCodeImage = await QRCode.toDataURL(orderingUrl);
+    const clientUrl = getClientUrl(req);
+    const orderingUrl = `${clientUrl}/order?table=${table.qrToken}`;
+    const qrCodeImage = await QRCode.toDataURL(orderingUrl, {
+      width: 400,
+      margin: 2,
+      color: { dark: "#0f172a", light: "#ffffff" }
+    });
 
     res.status(201).json({ table, orderingUrl, qrCodeImage });
   } catch (err) {
@@ -32,11 +48,16 @@ const createTable = async (req, res) => {
 const getTables = async (req, res) => {
   try {
     const tables = await Table.find({ restaurantId: req.user.restaurantId }).sort({ tableNumber: 1 });
+    const clientUrl = getClientUrl(req);
 
     const withQr = await Promise.all(
       tables.map(async (table) => {
-        const orderingUrl = `${process.env.CLIENT_URL}/order?table=${table.qrToken}`;
-        const qrCodeImage = await QRCode.toDataURL(orderingUrl);
+        const orderingUrl = `${clientUrl}/order?table=${table.qrToken}`;
+        const qrCodeImage = await QRCode.toDataURL(orderingUrl, {
+          width: 400,
+          margin: 2,
+          color: { dark: "#0f172a", light: "#ffffff" }
+        });
         return { table, orderingUrl, qrCodeImage };
       })
     );
@@ -48,20 +69,30 @@ const getTables = async (req, res) => {
 };
 
 /**
- * Public — resolves a scanned QR token back into table + restaurant info.
- * This is the very first API call the customer-facing app makes after a scan,
- * before the customer is even logged in.
+ * Public - resolves a scanned QR token back into table + restaurant info.
  */
 const getTableByToken = async (req, res) => {
   try {
     const { qrToken } = req.params;
     const table = await Table.findOne({ qrToken }).populate("restaurantId", "name address");
 
-    if (!table) return res.status(404).json({ message: "Invalid QR code" });
+    if (!table) return res.status(404).json({ message: "Invalid or expired QR code" });
     res.json(table);
   } catch (err) {
     res.status(500).json({ message: "Failed to resolve table", error: err.message });
   }
 };
 
-module.exports = { createTable, getTables, getTableByToken };
+/**
+ * Public - lists available tables so diners who sign up directly can select a table
+ */
+const getPublicTables = async (req, res) => {
+  try {
+    const tables = await Table.find().populate("restaurantId", "name address").sort({ tableNumber: 1 });
+    res.json(tables);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch tables", error: err.message });
+  }
+};
+
+module.exports = { createTable, getTables, getTableByToken, getPublicTables };

@@ -8,7 +8,8 @@ const {
   updateItemStatus
 } = require("../controllers/orderController");
 
-router.post("/", protect, allowRoles("customer"), placeOrder);
+// Customer or Owner testing
+router.post("/", protect, allowRoles("customer", "owner"), placeOrder);
 router.get("/kitchen", protect, allowRoles("chef", "owner"), getKitchenOrders);
 router.patch("/:orderId/items/:itemId", protect, allowRoles("chef", "owner"), updateItemStatus);
 

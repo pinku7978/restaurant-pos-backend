@@ -43,6 +43,8 @@ const registerOwner = async (req, res) => {
 const loginStaff = async (req, res) => {
   try {
     const { phone, password } = req.body;
+    console.log(phone, 'phone number-----');
+    console.log(password, 'password------');
     const staff = await Staff.findOne({ phone });
 
     if (!staff || !(await bcrypt.compare(password, staff.passwordHash))) {
@@ -60,7 +62,9 @@ const loginStaff = async (req, res) => {
 const registerCustomer = async (req, res) => {
   try {
     const { name, phone, password } = req.body;
-
+    console.log(name, 'name-----');
+    console.log(phone, 'phone number-----');
+    console.log(password, 'password------');
     const existing = await Customer.findOne({ phone });
     if (existing) {
       return res.status(400).json({ message: "Phone number already registered" });
@@ -80,6 +84,8 @@ const registerCustomer = async (req, res) => {
 const loginCustomer = async (req, res) => {
   try {
     const { phone, password } = req.body;
+    console.log(phone, 'phone number-----');
+    console.log(password, 'password------');
     const customer = await Customer.findOne({ phone });
 
     if (!customer || !(await bcrypt.compare(password, customer.passwordHash))) {

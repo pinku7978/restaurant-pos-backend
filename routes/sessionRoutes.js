@@ -10,13 +10,13 @@ const {
   requestBill
 } = require("../controllers/sessionController");
 
-// Customer-facing
-router.post("/", protect, allowRoles("customer"), createSession);
-router.post("/:sessionId/join", protect, allowRoles("customer"), joinSession);
-router.get("/table/:tableId", getActiveSessionsForTable); // public — shown right after a QR scan, before login
-router.post("/:sessionId/request-bill", protect, allowRoles("customer"), requestBill);
+// Customer or Owner testing
+router.post("/", protect, allowRoles("customer", "owner"), createSession);
+router.post("/:sessionId/join", protect, allowRoles("customer", "owner"), joinSession);
+router.get("/table/:tableId", getActiveSessionsForTable); // public - shown right after a QR scan, before login
+router.post("/:sessionId/request-bill", protect, allowRoles("customer", "owner"), requestBill);
 
-// Cashier-facing
+// Cashier or Owner oversight
 router.get("/restaurant/active", protect, allowRoles("cashier", "owner"), getActiveSessionsForRestaurant);
 
 module.exports = router;
