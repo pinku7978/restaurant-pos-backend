@@ -15,6 +15,7 @@ const sessionRoutes = require("./routes/sessionRoutes");
 const billRoutes = require("./routes/billRoutes");
 const tableRoutes = require("./routes/tableRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const webhookRoutes = require("./routes/webhookRoutes");
 
 connectDB();
 
@@ -28,7 +29,11 @@ app.use(cors({
   },
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/staff", staffRoutes);
@@ -38,6 +43,8 @@ app.use("/api/sessions", sessionRoutes);
 app.use("/api/bills", billRoutes);
 app.use("/api/tables", tableRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/webhooks", webhookRoutes);
+app.use("/webhooks", webhookRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {

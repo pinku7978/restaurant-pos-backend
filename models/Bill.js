@@ -18,7 +18,10 @@ const billSchema = new mongoose.Schema(
     items: [billItemSchema],
     totalAmount: { type: Number, required: true },
     paymentStatus: { type: String, enum: ["pending", "paid"], default: "pending" },
-    paymentMethod: { type: String, enum: ["cash", "card", "online"], default: null },
+    paymentMethod: { type: String, enum: ["cash", "card", "online", "upi"], default: null },
+    razorpayOrderId: { type: String, default: null },
+    razorpayPaymentId: { type: String, default: null },
+    razorpaySignature: { type: String, default: null },
     generatedAt: { type: Date, default: Date.now },
     paidAt: { type: Date }
   },
